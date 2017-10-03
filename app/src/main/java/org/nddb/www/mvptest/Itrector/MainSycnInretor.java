@@ -1,12 +1,13 @@
-package org.nddb.www.mvptest.Presenter;
+package org.nddb.www.mvptest.Itrector;
 
 import android.content.Context;
 import android.util.Log;
-import android.view.View;
 
+import org.nddb.www.mvptest.Constant.Constant;
+import org.nddb.www.mvptest.DbHelper.DbHelper;
 import org.nddb.www.mvptest.Interface.RequestIInterface;
-import org.nddb.www.mvptest.Itrector.MainSycnInretor;
 import org.nddb.www.mvptest.Model.User;
+import org.nddb.www.mvptest.Presenter.ImainPreenter;
 import org.nddb.www.mvptest.Util.RetroUtil;
 import org.nddb.www.mvptest.View.MainView;
 
@@ -19,43 +20,32 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import retrofit2.Response;
 
-
 /**
  * Created by admin on 09/27/2017.
  */
 
-public class MainPresnter implements ImainPreenter {
-    MainView context;
-    Context testContext;
-
-    MainSycnInretor mainSycn;
-
-    public MainPresnter(MainView context, Context contextTest) {
-        this.context = context;
-        this.testContext = contextTest;
-        this.mainSycn = new MainSycnInretor(context);
+public class MainSycnInretor implements ImainIntercor {
+    public MainSycnInretor(MainView context) {
     }
 
     @Override
-    public void AttemptoLogin(String userName) {
-        long isValid = mainSycn.CheckValidaion(userName, testContext);
-        Log.d("jai", "log :" + isValid);
-        if (isValid > -1) context.onSuccses(isValid);
-        else context.onError(isValid);
-    }
-
-
-    @Override
-    public void GetData(Context contexts) {
-        ArrayList<HashMap<String, String>> list = mainSycn.getData(contexts);
-        context.OnSuccesist(list);
+    public Long CheckValidaion(String userName, Context c) {
+        DbHelper dbHelper = new DbHelper(c);
+        HashMap<String, Object> hashMap = new HashMap<>();
+        hashMap.put(Constant.fieldUserName, userName);
+        return dbHelper.insertRecordInDB(Constant.tableUser, hashMap);
     }
 
     @Override
-    public void GetDataFromServer(final MainView context) {
-        mainSycn.getUsers(MainPresnter.this);
+    public ArrayList<HashMap<String, String>> getData(Context c) {
+        String qry = "select * from " + Constant.tableUser;
+        DbHelper dbHelper = new DbHelper(c);
+        ArrayList<HashMap<String, String>> array = dbHelper.selectRecordFromDb(qry, null, false);
+        return array;
+    }
 
-        context.setProgressBarVisiblity(View.VISIBLE);
+    @Override
+    public Void getUsers(final ImainPreenter context) {
         final User users;
         RequestIInterface requestIInterface = RetroUtil.requestInterface();
         requestIInterface.getUSERS(3)
@@ -71,8 +61,7 @@ public class MainPresnter implements ImainPreenter {
                         Log.d("jai", userResponse.toString());
                         if (userResponse.code() == 200) {
                             User user = userResponse.body();
-                            context.OnUsersSucces(user);
-
+                            context.DataResponse(user);
                             // mainPresnter.DataResponse(user);
                         } else {
 
@@ -82,27 +71,18 @@ public class MainPresnter implements ImainPreenter {
                     @Override
                     public void onError(Throwable e) {
                         e.printStackTrace();
-                        context.onUserResError(e.toString());
-                        Log.d("jai", "map view error" + e.toString());
-                        // context.DataError(e);
+                        context.DataError(e);
                         //  mainPresnter.DataError(e);
                     }
 
                     @Override
                     public void onComplete() {
-                        context.setProgressBarVisiblity(View.INVISIBLE);
+
                     }
                 });
+
+        return null;
     }
 
-    @Override
-    public void DataResponse(User user) {
-        Log.d("jai", "users :" + user);
-        context.OnUsersSucces(user);
-    }
 
-    @Override
-    public void DataError(Throwable throwable) {
-        Log.d("jai", "users :" + throwable.toString());
-    }
 }
